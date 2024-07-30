@@ -18,7 +18,6 @@ int findShortestRemainingTime(struct PCB ready_queue[QUEUEMAX], int queue_cnt) {
 // **** PRIORITY-BASED PREEMPTIVE ****
 
 struct PCB handle_process_arrival_pp(struct PCB ready_queue[QUEUEMAX], int *queue_cnt, struct PCB current_process, struct PCB new_process, int timestamp) {
-   
     // Handle full queue
     if (*queue_cnt == QUEUEMAX) {
         printf("Ready queue is full. Dropping new process.\n");
@@ -37,28 +36,22 @@ struct PCB handle_process_arrival_pp(struct PCB ready_queue[QUEUEMAX], int *queu
         // Preempt the current process
         current_process.remaining_bursttime -= (timestamp - current_process.execution_starttime);
         current_process.execution_starttime = -1; // Mark as not running
-        
         // Find the correct insertion point for the preempted process 
         int insertIndex = *queue_cnt;
         for (int i = 0; i < *queue_cnt; i++) { 
-            if (current_process.process_priority <= ready_queue[i].process_priority) { 
+            if (current_process.process_priority < ready_queue[i].process_priority) {
                 insertIndex = i;
                 break;
             }
         }
-        
-        // Shift elements to make space for the preempted process (including the new process)
-        for (int i = (*queue_cnt); i > insertIndex; i--) { 
+
+        // Shift elements to make space for the preempted process
+        for (int i = (*queue_cnt)++; i > insertIndex; i--) { 
             ready_queue[i] = ready_queue[i - 1];
         }
         ready_queue[insertIndex] = current_process; // Insert preempted process
-        
-        // Update new process start time
+
         new_process.execution_starttime = timestamp;
-
-        // Update the execution_endtime of the new process
-        new_process.execution_endtime = timestamp + new_process.total_bursttime;
-
         return new_process; 
     }
 
@@ -75,8 +68,6 @@ struct PCB handle_process_arrival_pp(struct PCB ready_queue[QUEUEMAX], int *queu
     }
     ready_queue[insertIndex] = new_process; 
 
-    //Update the execution_endtime of the new process
-    new_process.execution_endtime = timestamp + new_process.total_bursttime;
     return current_process; 
 }
 
