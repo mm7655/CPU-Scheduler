@@ -163,8 +163,8 @@ struct PCB handle_process_completion_srtp(struct PCB ready_queue[QUEUEMAX], int 
 
 // **** ROUND ROBIN ****
 
-struct PCB handle_process_arrival_rr(struct PCB ready_queue[QUEUEMAX], int *queue_cnt, struct PCB current_process, struct PCB new_process, int timestamp, int time_quantum)   
- {
+struct PCB handle_process_arrival_rr(struct PCB ready_queue[QUEUEMAX], int *queue_cnt, struct PCB current_process, struct PCB new_process, int timestamp, int time_quantum)
+{
     if (*queue_cnt < QUEUEMAX) {
         ready_queue[*queue_cnt] = new_process;
         (*queue_cnt)++;
