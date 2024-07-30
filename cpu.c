@@ -66,16 +66,14 @@ struct PCB handle_process_arrival_pp(struct PCB ready_queue[QUEUEMAX], int *queu
 
 struct PCB handle_process_completion_pp(struct PCB ready_queue[QUEUEMAX], int *queue_cnt, int timestamp) {
     if (*queue_cnt == 0) {
-        struct PCB null_PCB   
- = {-1, -1, -1, -1, -1, -1, -1};
+        struct PCB null_PCB = {-1, -1, -1, -1, -1, -1, -1};
         return null_PCB;
     }
     
     int highestPriorityIndex = 0;
     for (int i = 1; i < *queue_cnt; i++) {
         if (ready_queue[i].process_priority < ready_queue[highestPriorityIndex].process_priority) {
-            highestPriorityIndex = i;   
-
+            highestPriorityIndex = i;
         }
     }
 
