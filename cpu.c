@@ -15,44 +15,16 @@ int findShortestRemainingTime(struct PCB ready_queue[QUEUEMAX], int queue_cnt) {
     return shortest_index;
 }
 
-void enqueue(struct PCB ready_queue[QUEUEMAX], int *queue_cnt, struct PCB process) {
-    // Ensure the queue is not full
-    if (*queue_cnt == QUEUEMAX) {
-        printf("Ready queue is full. Cannot enqueue process.\n");
-        return;
-    }
-
-    // Find the correct insertion point based on priority
-    int insertIndex = *queue_cnt;
-    for (int i = 0; i < *queue_cnt; i++) {
-        if (process.process_priority < ready_queue[i].process_priority) {
-            insertIndex = i;
-            break;
-        }
-    }
-
-    // Shift elements to make space
-    for (int i = (*queue_cnt)++; i > insertIndex; i--) {
-        ready_queue[i] = ready_queue[i - 1];
-    }
-
-    // Insert the process
-    ready_queue[insertIndex] = process;
-}
-
-
 // **** PRIORITY-BASED PREEMPTIVE ****
 
 struct PCB handle_process_arrival_pp(struct PCB ready_queue[QUEUEMAX], int *queue_cnt, struct PCB current_process, struct PCB new_process, int timestamp) {
 
-    // Check if the queue is full before adding a new process
     if (*queue_cnt == QUEUEMAX) {
         printf("Ready queue is full. Dropping new process.\n");
-        return current_process;
+        return current_process; 
     }
 
-    // Handle initial arrival (no process currently running)
-    if (current_process.process_id == -1) {
+    if (current_process.process_id == -1) { // No process running
         new_process.execution_starttime = timestamp;
         new_process.execution_endtime = timestamp + new_process.total_bursttime;
         new_process.remaining_bursttime = new_process.total_bursttime;
@@ -64,25 +36,34 @@ struct PCB handle_process_arrival_pp(struct PCB ready_queue[QUEUEMAX], int *queu
     if (new_process.process_priority < current_process.process_priority) {
         // Preempt the current process
         current_process.remaining_bursttime -= (timestamp - current_process.execution_starttime);
-        current_process.execution_starttime = 0; // Mark as not running
-        current_process.execution_endtime = 0; 
+        // Do not reset execution_starttime for preempted process.
+        // Do not reset execution_endtime for preempted process
 
-        // Insert preempted process directly into the queue based on priority
-        enqueue(ready_queue, queue_cnt, current_process); // Use enqueue to maintain priority order
+        // Insert the preempted process into the ready queue
+        ready_queue[(*queue_cnt)++] = current_process;
 
         new_process.execution_starttime = timestamp;
         new_process.execution_endtime = timestamp + new_process.total_bursttime;
-        return new_process;
-    } else { // New process has lower or equal priority
-        // Modify PCB info (reset execution times for queued process)
-        new_process.execution_starttime = 0;
-        new_process.execution_endtime = 0;
-        new_process.remaining_bursttime = new_process.total_bursttime;
 
-        enqueue(ready_queue, queue_cnt, new_process); // Enqueue the new process
-        return current_process;
+        return new_process; 
     }
+
+    // No preemption, insert the new process into the queue based on priority
+    int insertIndex = *queue_cnt;
+    for (int i = 0; i < *queue_cnt; i++) { 
+        if (new_process.process_priority < ready_queue[i].process_priority) {
+            insertIndex = i;
+            break;
+        }
+    }
+    for (int i = (*queue_cnt)++; i > insertIndex; i--) {
+        ready_queue[i] = ready_queue[i - 1];
+    }
+    ready_queue[insertIndex] = new_process; 
+
+    return current_process; 
 }
+
 
 
 
