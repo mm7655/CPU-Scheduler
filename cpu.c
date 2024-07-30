@@ -92,8 +92,7 @@ struct PCB handle_process_completion_pp(struct PCB ready_queue[QUEUEMAX], int *q
 
 // **** SRTF ****
 
-struct PCB handle_process_arrival_srtp(struct PCB ready_queue[QUEUEMAX], int *queue_cnt, struct PCB current_process, struct PCB new_process, int   
- timestamp) {
+struct PCB handle_process_arrival_srtp(struct PCB ready_queue[QUEUEMAX], int *queue_cnt, struct PCB current_process, struct PCB new_process, int timestamp) {
     if (*queue_cnt == QUEUEMAX) {
         printf("Ready queue is full. Dropping new process.\n");
         return current_process;
@@ -107,8 +106,7 @@ struct PCB handle_process_arrival_srtp(struct PCB ready_queue[QUEUEMAX], int *qu
     // Check if new process should preempt (based on remaining burst time)
     if (new_process.total_bursttime < current_process.remaining_bursttime) {
         current_process.remaining_bursttime -= (timestamp - current_process.execution_starttime);
-        ready_queue[(*queue_cnt)++] = current_process;   
- // Put preempted process back in queue
+        ready_queue[(*queue_cnt)++] = current_process;
         new_process.execution_starttime = timestamp;
         return new_process;
     }
@@ -116,10 +114,8 @@ struct PCB handle_process_arrival_srtp(struct PCB ready_queue[QUEUEMAX], int *qu
     return current_process;
 }
 
-struct PCB handle_process_completion_srtp(struct PCB ready_queue[QUEUEMAX], int *queue_cnt, int   
- timestamp) {
-    if (*queue_cnt   
- == 0) { // Handle empty queue
+struct PCB handle_process_completion_srtp(struct PCB ready_queue[QUEUEMAX], int *queue_cnt, int timestamp) {
+    if (*queue_cnt == 0) { // Handle empty queue
         struct PCB null_PCB = {-1, -1, -1, -1, -1, -1, -1};
         return null_PCB;
     }
@@ -140,15 +136,15 @@ struct PCB handle_process_completion_srtp(struct PCB ready_queue[QUEUEMAX], int 
 
 // **** ROUND ROBIN ****
 
-struct PCB handle_process_arrival_rr(struct PCB ready_queue[QUEUEMAX], int *queue_cnt, struct PCB current_process, struct PCB new_process, int timestamp, int time_quantum)   
- {
+struct PCB handle_process_arrival_rr(struct PCB ready_queue[QUEUEMAX], int *queue_cnt, struct PCB current_process, struct PCB new_process, int timestamp, int time_quantum)
+{
     ready_queue[(*queue_cnt)++] = new_process;
     return current_process; // No preemption in RR on arrival
 }
 
 struct PCB handle_process_completion_rr(struct PCB ready_queue[QUEUEMAX], int *queue_cnt, int timestamp, int time_quantum) {
-    if (*queue_cnt == 0)   
- {
+    if (*queue_cnt == 0)
+    {
         struct PCB null_PCB = {-1, -1, -1, -1, -1, -1, -1};
         return null_PCB;
     }
