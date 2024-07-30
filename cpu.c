@@ -18,54 +18,79 @@ int findShortestRemainingTime(struct PCB ready_queue[QUEUEMAX], int queue_cnt) {
 // **** PRIORITY-BASED PREEMPTIVE ****
 
 struct PCB handle_process_arrival_pp(struct PCB ready_queue[QUEUEMAX], int *queue_cnt, struct PCB current_process, struct PCB new_process, int timestamp) {
+    // Handle full queue
     if (*queue_cnt == QUEUEMAX) {
         printf("Ready queue is full. Dropping new process.\n");
         return current_process; 
     }
 
+    // Handle initial arrival (no process currently running)
     if (current_process.process_id == -1) {
         new_process.execution_starttime = timestamp;
         ready_queue[(*queue_cnt)++] = new_process;
-        return new_process; 
-    }
-
-    if (new_process.process_priority < current_process.process_priority) {
-        current_process.remaining_bursttime -= (timestamp - current_process.execution_starttime);
-        current_process.execution_starttime = -1; 
-
-        int insertIndex = *queue_cnt;
-        for (int i = 0; i < *queue_cnt; i++) { 
-            if (current_process.process_priority <= ready_queue[i].process_priority) { 
-                insertIndex = i;
-                break;
-            }
-        }
-        for (int i = (*queue_cnt)++; i > insertIndex; i--) {
-            ready_queue[i] = ready_queue[i - 1];
-        }
-        ready_queue[insertIndex] = current_process;
-
-        new_process.execution_starttime = timestamp; 
         return new_process;
     }
 
-    // No preemption, insert new process based on priority
+    // Check for preemption
+    if (new_process.process_priority < current_process.process_priority) {
+        // Preempt the current process
+        current_process.remaining_bursttime -= (timestamp - current_process.execution_starttime);
+        current_process.execution_starttime = -1;
+
+        // Insert the preempted process AND the new process back into the queue
+        int currentInsertIndex = 0;
+        int newInsertIndex = 0;
+
+        // Find the correct insertion index for the preempted process
+        for (int i = 0; i < *queue_cnt; i++) {
+            if (current_process.process_priority <= ready_queue[i].process_priority) {
+                currentInsertIndex = i;
+                break;
+            }
+        }
+        
+        // Find the correct insertion index for the new process
+        for (int i = 0; i <= *queue_cnt; i++) { 
+            if (new_process.process_priority <= ready_queue[i].process_priority) {
+                newInsertIndex = i;
+                break;
+            }
+        }
+        
+        // Shift elements and insert both processes
+        for (int i = *queue_cnt + 1; i > newInsertIndex; i--) {
+            ready_queue[i] = ready_queue[i - 1];
+        }
+
+        ready_queue[currentInsertIndex] = current_process;
+        ready_queue[newInsertIndex] = new_process;
+
+        (*queue_cnt) += 2;  
+        
+        new_process.execution_starttime = timestamp; 
+        return new_process; 
+    }
+
+    // No preemption, insert the new process into the queue based on priority
     int insertIndex = *queue_cnt;
-    for (int i = 0; i < *queue_cnt; i++) { 
+    for (int i = 0; i < *queue_cnt; i++) {
         if (new_process.process_priority <= ready_queue[i].process_priority) {
             insertIndex = i;
             break;
         }
     }
-    for (int i = (*queue_cnt)++; i > insertIndex; i--) {
+    for (int i = *queue_cnt; i > insertIndex; i--) {
         ready_queue[i] = ready_queue[i - 1];
     }
     ready_queue[insertIndex] = new_process;
+    (*queue_cnt)++; // Increment queue count for the new process
+
     return current_process; 
 }
 
+
 struct PCB handle_process_completion_pp(struct PCB ready_queue[QUEUEMAX], int *queue_cnt, int timestamp) {
-    if (*queue_cnt == 0) {
+   if (*queue_cnt == 0) {
         struct PCB null_PCB = {-1, -1, -1, -1, -1, -1, -1};
         return null_PCB;
     }
@@ -86,8 +111,10 @@ struct PCB handle_process_completion_pp(struct PCB ready_queue[QUEUEMAX], int *q
     (*queue_cnt)--;
 
     next_process.execution_starttime = timestamp; // Set the start time for the next process
+    next_process.execution_endtime = timestamp + next_process.remaining_bursttime; //Set end time for the process
     return next_process;
 }
+
 
 
 // **** SRTF ****
@@ -136,19 +163,21 @@ struct PCB handle_process_completion_srtp(struct PCB ready_queue[QUEUEMAX], int 
 
 // **** ROUND ROBIN ****
 
-struct PCB handle_process_arrival_rr(struct PCB ready_queue[QUEUEMAX], int *queue_cnt, struct PCB current_process, struct PCB new_process, int timestamp, int time_quantum)
-{
-    ready_queue[(*queue_cnt)++] = new_process;
+struct PCB handle_process_arrival_rr(struct PCB ready_queue[QUEUEMAX], int *queue_cnt, struct PCB current_process, struct PCB new_process, int timestamp, int time_quantum)   
+ {
+    if (*queue_cnt < QUEUEMAX) {
+        ready_queue[*queue_cnt] = new_process;
+        (*queue_cnt)++;
+    } 
     return current_process; // No preemption in RR on arrival
 }
 
 struct PCB handle_process_completion_rr(struct PCB ready_queue[QUEUEMAX], int *queue_cnt, int timestamp, int time_quantum) {
-    if (*queue_cnt == 0)
-    {
+    if (*queue_cnt == 0) { // Handle empty queue
         struct PCB null_PCB = {-1, -1, -1, -1, -1, -1, -1};
         return null_PCB;
     }
-    
+
     struct PCB completed_process = ready_queue[0];
     for (int i = 0; i < *queue_cnt - 1; i++) {
         ready_queue[i] = ready_queue[i + 1];
@@ -156,14 +185,19 @@ struct PCB handle_process_completion_rr(struct PCB ready_queue[QUEUEMAX], int *q
     (*queue_cnt)--;
 
     // Check if process used its full time quantum
-    if (completed_process.remaining_bursttime > 0) { 
+    if (completed_process.remaining_bursttime > 0) {
         completed_process.remaining_bursttime -= time_quantum;
+        completed_process.execution_starttime = -1; // Mark as not running
         ready_queue[*queue_cnt] = completed_process; // Add back to the end of the queue
         (*queue_cnt)++;
     }
+
     // Update the execution start time of the next process (if any)
     if (*queue_cnt > 0) {
         ready_queue[0].execution_starttime = timestamp;
     }
-    return (*queue_cnt > 0) ? ready_queue[0] : (struct PCB){-1, -1, -1, -1, -1, -1, -1}; 
+    
+    // Return the next process or a null PCB
+    return (*queue_cnt > 0) ? ready_queue[0] : (struct PCB){-1, -1, -1, -1, -1, -1, -1};
 }
+
