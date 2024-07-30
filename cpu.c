@@ -42,6 +42,7 @@ struct PCB handle_process_arrival_pp(struct PCB ready_queue[QUEUEMAX], int *queu
         new_process.remaining_bursttime = new_process.total_bursttime;
        
         current_process.remaining_bursttime -= (timestamp - current_process.execution_starttime);
+        int original_starttime = current_process.execution_starttime;
         current_process.execution_starttime = -1; 
         current_process.execution_endtime = 0; 
         
@@ -57,6 +58,7 @@ struct PCB handle_process_arrival_pp(struct PCB ready_queue[QUEUEMAX], int *queu
         for (int i = (*queue_cnt); i > currentInsertIndex; i--) { 
             ready_queue[i] = ready_queue[i - 1];
         }
+        current_process.execution_starttime = original_starttime; 
         ready_queue[currentInsertIndex] = current_process;
         (*queue_cnt)++;
         new_process.execution_starttime = timestamp;
