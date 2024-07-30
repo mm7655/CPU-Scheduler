@@ -55,12 +55,12 @@ struct PCB handle_process_arrival_pp(struct PCB ready_queue[QUEUEMAX], int *queu
                 break;
             }
         }
-        for (int i = (*queue_cnt); i > currentInsertIndex; i--) { 
+        for (int i = (*queue_cnt++); i > currentInsertIndex; i--) { 
             ready_queue[i] = ready_queue[i - 1];
         }
         current_process.execution_starttime = original_starttime; 
         ready_queue[currentInsertIndex] = current_process;
-        (*queue_cnt)++;
+        //(*queue_cnt)++;
         new_process.execution_starttime = timestamp;
         new_process.execution_endtime = timestamp + new_process.total_bursttime;
         return new_process;
