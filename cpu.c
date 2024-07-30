@@ -18,39 +18,61 @@ int findShortestRemainingTime(struct PCB ready_queue[QUEUEMAX], int queue_cnt) {
 // **** PRIORITY-BASED PREEMPTIVE ****
 
 struct PCB handle_process_arrival_pp(struct PCB ready_queue[QUEUEMAX], int *queue_cnt, struct PCB current_process, struct PCB new_process, int timestamp) {
+   
+    // Handle full queue 
+    if (*queue_cnt == QUEUEMAX) {
+        printf("Ready queue is full. Dropping new process.\n");
+        return current_process; 
+    }
 
     // Handle initial arrival (no process currently running)
     if (current_process.process_id == -1) {
         new_process.execution_starttime = timestamp;
         new_process.execution_endtime = timestamp + new_process.total_bursttime;
         new_process.remaining_bursttime = new_process.total_bursttime;
+        ready_queue[(*queue_cnt)++] = new_process; 
         return new_process;
     }
 
     // Check if new process should preempt
     if (new_process.process_priority < current_process.process_priority) {
-    
+        // Preempt the current process
+        current_process.remaining_bursttime -= (timestamp - current_process.execution_starttime);
+        current_process.execution_starttime = 0; 
+        current_process.execution_endtime = 0; 
+
+        // Insert preempted process directly into the queue based on priority
+        int currentInsertIndex = *queue_cnt;
+        for (int i = 0; i < *queue_cnt; i++) { 
+            if (current_process.process_priority < ready_queue[i].process_priority) {
+                currentInsertIndex = i;
+                break;
+            }
+        }
+        for (int i = (*queue_cnt)++; i > currentInsertIndex; i--) { 
+            ready_queue[i] = ready_queue[i - 1];
+        }
+        ready_queue[currentInsertIndex] = current_process;
+
         new_process.execution_starttime = timestamp;
         new_process.execution_endtime = timestamp + new_process.total_bursttime;
-        new_process.remaining_bursttime = new_process.total_bursttime;
-    
-        current_process.remaining_bursttime -= (timestamp - current_process.execution_starttime);
-        current_process.execution_starttime = 0;
-        current_process.execution_endtime = 0;
-        enqueue(ready_queue, queue_cnt, current_process);
-        
         return new_process;
     }
-    else {
-    //new process has lower priority
-        //modify pcb info
-        new_process.execution_starttime = 0;
-        new_process.execution_endtime = 0;
-        new_process.remaining_bursttime = new_process.total_bursttime;
-        enqueue(ready_queue, queue_cnt, new_process);
 
-        return current_process;
+    // No preemption, insert the new process into the queue based on priority
+    int insertIndex = *queue_cnt;
+    for (int i = 0; i < *queue_cnt; i++) { 
+        if (new_process.process_priority < ready_queue[i].process_priority) {
+            insertIndex = i;
+            break;
+        }
     }
+    for (int i = (*queue_cnt)++; i > insertIndex; i--) {
+        ready_queue[i] = ready_queue[i - 1];
+    }
+    ready_queue[insertIndex] = new_process; // Insert preempted process
+  
+    return current_process; 
 }
 
 
@@ -165,27 +187,4 @@ struct PCB handle_process_completion_rr(struct PCB ready_queue[QUEUEMAX], int *q
     
     // Return the next process or a null PCB
     return (*queue_cnt > 0) ? ready_queue[0] : (struct PCB){-1, -1, -1, -1, -1, -1, -1};
-}
-
-void enqueue(struct PCB ready_queue[QUEUEMAX], int *queue_cnt, struct PCB process) {
-    // Ensure the queue is not full
-    if (*queue_cnt == QUEUEMAX) {
-        printf("Ready queue is full. Cannot enqueue process.\n");
-        return;
-    }
-
-    // Insert the process in the correct position based on priority
-    int insertIndex = *queue_cnt;
-    for (int i = 0; i < *queue_cnt; i++) {
-        if (process.process_priority < ready_queue[i].process_priority) {
-            insertIndex = i;
-            break;
-        }
-    }
-
-    // Shift elements to make space for the new process
-    for (int i = (*queue_cnt)++; i > insertIndex; i--) {
-        ready_queue[i] = ready_queue[i - 1];
-    }
-    ready_queue[insertIndex] = process;
 }
