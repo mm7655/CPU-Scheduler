@@ -92,12 +92,13 @@ struct PCB handle_process_completion_pp(struct PCB ready_queue[QUEUEMAX], int *q
 
 // **** SRTF ****
 
-struct PCB handle_process_arrival_srtp(struct PCB ready_queue[QUEUEMAX], int *queue_cnt, struct PCB current_process, struct PCB new_process, int timestamp) {
+struct PCB handle_process_arrival_srtp(struct PCB ready_queue[QUEUEMAX], int *queue_cnt, struct PCB current_process, struct PCB new_process, int   
+ timestamp) {
     if (*queue_cnt == QUEUEMAX) {
         printf("Ready queue is full. Dropping new process.\n");
         return current_process;
     }
-    if (current_process.process_id == -1) { 
+    if (current_process.process_id == -1) { // If no process is running
         new_process.execution_starttime = timestamp;
         ready_queue[(*queue_cnt)++] = new_process;
         return new_process; 
@@ -106,7 +107,8 @@ struct PCB handle_process_arrival_srtp(struct PCB ready_queue[QUEUEMAX], int *qu
     // Check if new process should preempt (based on remaining burst time)
     if (new_process.total_bursttime < current_process.remaining_bursttime) {
         current_process.remaining_bursttime -= (timestamp - current_process.execution_starttime);
-        ready_queue[(*queue_cnt)++] = current_process; // Put preempted process back in queue
+        ready_queue[(*queue_cnt)++] = current_process;   
+ // Put preempted process back in queue
         new_process.execution_starttime = timestamp;
         return new_process;
     }
@@ -114,13 +116,43 @@ struct PCB handle_process_arrival_srtp(struct PCB ready_queue[QUEUEMAX], int *qu
     return current_process;
 }
 
-struct PCB handle_process_completion_rr(struct PCB ready_queue[QUEUEMAX], int *queue_cnt, int timestamp, int time_quantum) {
-    if (*queue_cnt == 0)
-    {
+struct PCB handle_process_completion_srtp(struct PCB ready_queue[QUEUEMAX], int *queue_cnt, int   
+ timestamp) {
+    if (*queue_cnt   
+ == 0) { // Handle empty queue
         struct PCB null_PCB = {-1, -1, -1, -1, -1, -1, -1};
         return null_PCB;
     }
 
+    int next_process_index = findShortestRemainingTime(ready_queue, *queue_cnt); 
+    struct PCB next_process = ready_queue[next_process_index];
+
+    // Shift elements to remove the completed process
+    for (int i = next_process_index; i < (*queue_cnt) - 1; i++) {
+        ready_queue[i] = ready_queue[i + 1];
+    }
+    (*queue_cnt)--;
+
+    next_process.execution_starttime = timestamp; 
+    return next_process;
+}
+
+
+// **** ROUND ROBIN ****
+
+struct PCB handle_process_arrival_rr(struct PCB ready_queue[QUEUEMAX], int *queue_cnt, struct PCB current_process, struct PCB new_process, int timestamp, int time_quantum)   
+ {
+    ready_queue[(*queue_cnt)++] = new_process;
+    return current_process; // No preemption in RR on arrival
+}
+
+struct PCB handle_process_completion_rr(struct PCB ready_queue[QUEUEMAX], int *queue_cnt, int timestamp, int time_quantum) {
+    if (*queue_cnt == 0)   
+ {
+        struct PCB null_PCB = {-1, -1, -1, -1, -1, -1, -1};
+        return null_PCB;
+    }
+    
     struct PCB completed_process = ready_queue[0];
     for (int i = 0; i < *queue_cnt - 1; i++) {
         ready_queue[i] = ready_queue[i + 1];
@@ -128,26 +160,14 @@ struct PCB handle_process_completion_rr(struct PCB ready_queue[QUEUEMAX], int *q
     (*queue_cnt)--;
 
     // Check if process used its full time quantum
-    if (completed_process.remaining_bursttime > 0) {
+    if (completed_process.remaining_bursttime > 0) { 
         completed_process.remaining_bursttime -= time_quantum;
         ready_queue[*queue_cnt] = completed_process; // Add back to the end of the queue
         (*queue_cnt)++;
     }
-
     // Update the execution start time of the next process (if any)
     if (*queue_cnt > 0) {
         ready_queue[0].execution_starttime = timestamp;
     }
-
-    // Return the next process in the queue (or a null PCB if the queue is empty)
-    return (*queue_cnt > 0) ? ready_queue[0] : (struct PCB){-1, -1, -1, -1, -1, -1, -1};
+    return (*queue_cnt > 0) ? ready_queue[0] : (struct PCB){-1, -1, -1, -1, -1, -1, -1}; 
 }
-
-// **** ROUND ROBIN ****
-
-struct PCB handle_process_arrival_rr(struct PCB ready_queue[QUEUEMAX], int *queue_cnt, struct PCB current_process, struct PCB new_process, int timestamp, int time_quantum) {
-    ready_queue[(*queue_cnt)++] = new_process;
-    return current_process; // No preemption in RR on arrival
-}
-
-
