@@ -24,7 +24,8 @@ struct PCB handle_process_arrival_pp(struct PCB ready_queue[QUEUEMAX], int *queu
         return current_process; 
     }
 
-    if (current_process.process_id == -1) { // No process running
+    // Handle initial arrival (no process currently running)
+    if (current_process.process_id == -1) {
         new_process.execution_starttime = timestamp;
         ready_queue[(*queue_cnt)++] = new_process;
         return new_process; 
@@ -39,7 +40,7 @@ struct PCB handle_process_arrival_pp(struct PCB ready_queue[QUEUEMAX], int *queu
         ready_queue[(*queue_cnt)++] = current_process;
         // Update new process start time
         new_process.execution_starttime = timestamp;
-        return new_process;
+        return new_process; 
     }
 
     // No preemption, insert the new process into the queue based on priority
