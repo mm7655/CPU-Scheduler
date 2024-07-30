@@ -18,75 +18,58 @@ int findShortestRemainingTime(struct PCB ready_queue[QUEUEMAX], int queue_cnt) {
 // **** PRIORITY-BASED PREEMPTIVE ****
 
 struct PCB handle_process_arrival_pp(struct PCB ready_queue[QUEUEMAX], int *queue_cnt, struct PCB current_process, struct PCB new_process, int timestamp) {
-
-    // Check if the queue is full before adding new process
+    // Handle full queue
     if (*queue_cnt == QUEUEMAX) {
         printf("Ready queue is full. Dropping new process.\n");
         return current_process; 
     }
 
-    if (current_process.process_id == -1) { // If no process is running
+    // Handle initial arrival (no process currently running)
+    if (current_process.process_id == -1) {
         new_process.execution_starttime = timestamp;
         ready_queue[(*queue_cnt)++] = new_process;
         return new_process; 
     }
-    
-    // Check if the new process has a higher priority than the current process
+
+    // Insert new process in the correct position based on priority
+    int newProcessInsertIndex = *queue_cnt;
+    for (int i = 0; i < *queue_cnt; i++) {
+        if (new_process.process_priority < ready_queue[i].process_priority) {
+            newProcessInsertIndex = i;
+            break;
+        }
+    }
+    for (int i = *queue_cnt; i > newProcessInsertIndex; i--) {
+        ready_queue[i] = ready_queue[i - 1];
+    }
+    ready_queue[newProcessInsertIndex] = new_process;
+    (*queue_cnt)++; //Increment the queue counter to include new process
+
+    // Check if new process should preempt
     if (new_process.process_priority < current_process.process_priority) {
         current_process.remaining_bursttime -= (timestamp - current_process.execution_starttime);
         current_process.execution_starttime = -1;
 
-        // Insert the preempted process AND the new process back into the queue
+        // Find the correct insertion point for the preempted process after the new process was inserted
         int currentInsertIndex = 0;
-        int newInsertIndex = 0;
-
-        // Find the correct insertion index for the preempted process
-        for (int i = 0; i < *queue_cnt; i++) {
+        for (int i = 0; i < *queue_cnt; i++) { 
             if (current_process.process_priority < ready_queue[i].process_priority) {
                 currentInsertIndex = i;
                 break;
             }
         }
-        
-        // Find the correct insertion index for the new process
-        for (int i = 0; i < *queue_cnt; i++) {
-            if (new_process.process_priority < ready_queue[i].process_priority) {
-                newInsertIndex = i;
-                break;
-            }
-        }
-        
-        // Shift elements and insert both processes
-        for (int i = *queue_cnt; i > newInsertIndex; i--) {
+
+        // Shift elements to make space for the preempted process
+        for (int i = *queue_cnt; i > currentInsertIndex; i--) {
             ready_queue[i] = ready_queue[i - 1];
         }
-        for (int i = newInsertIndex; i > currentInsertIndex; i--) {
-            ready_queue[i] = ready_queue[i - 1];
-        }
+        
+        ready_queue[currentInsertIndex] = current_process; // Insert preempted process
 
-        ready_queue[currentInsertIndex] = current_process;
-        ready_queue[newInsertIndex] = new_process;
-
-        (*queue_cnt) += 1;
-        new_process.execution_starttime = timestamp; 
-        return new_process; 
+        return new_process; // The new process becomes the current process
     }
 
-    // No preemption, insert the new process into the queue based on priority
-    int insertIndex = *queue_cnt;
-    for (int i = 0; i < *queue_cnt; i++) { 
-        if (new_process.process_priority < ready_queue[i].process_priority) {
-            insertIndex = i;
-            break;
-        }
-    }
-    for (int i = *queue_cnt; i > insertIndex; i--) {
-        ready_queue[i] = ready_queue[i - 1];
-    }
-    ready_queue[insertIndex] = new_process;
-    (*queue_cnt)++; // Increment queue count for the new process
-
-    return current_process; 
+    return current_process; // No preemption
 }
 
 
