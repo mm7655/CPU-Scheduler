@@ -18,13 +18,15 @@ int findShortestRemainingTime(struct PCB ready_queue[QUEUEMAX], int queue_cnt) {
 // **** PRIORITY-BASED PREEMPTIVE ****
 
 struct PCB handle_process_arrival_pp(struct PCB ready_queue[QUEUEMAX], int *queue_cnt, struct PCB current_process, struct PCB new_process, int timestamp) {
-   
+
+    // Handle full queue
     if (*queue_cnt == QUEUEMAX) {
         printf("Ready queue is full. Dropping new process.\n");
         return current_process; 
     }
 
-    if (current_process.process_id == -1) { // No process running
+    // Handle initial arrival (no process currently running)
+    if (current_process.process_id == -1) {
         new_process.execution_starttime = timestamp;
         ready_queue[(*queue_cnt)++] = new_process;
         return new_process; 
@@ -34,15 +36,13 @@ struct PCB handle_process_arrival_pp(struct PCB ready_queue[QUEUEMAX], int *queu
     if (new_process.process_priority < current_process.process_priority) {
         // Preempt the current process
         current_process.remaining_bursttime -= (timestamp - current_process.execution_starttime);
-        // Do not change execution_starttime for preempted process.
+        // Do not reset execution_starttime for preempted process.
+        // The preempted process keeps its original execution_starttime because it had already started executing.
 
         // Insert the preempted process into the ready queue
         ready_queue[(*queue_cnt)++] = current_process;
 
-        // Reset the EET of the preempted process before adding to queue
-        ready_queue[*queue_cnt-1].execution_endtime = 0; 
-        
-        // Update new process start time
+        // Update new process start and end times
         new_process.execution_starttime = timestamp;
         new_process.execution_endtime = timestamp + new_process.total_bursttime;
 
@@ -64,6 +64,7 @@ struct PCB handle_process_arrival_pp(struct PCB ready_queue[QUEUEMAX], int *queu
 
     return current_process; 
 }
+
 
 
 struct PCB handle_process_completion_pp(struct PCB ready_queue[QUEUEMAX], int *queue_cnt, int timestamp) {
