@@ -18,14 +18,13 @@ int findShortestRemainingTime(struct PCB ready_queue[QUEUEMAX], int queue_cnt) {
 // **** PRIORITY-BASED PREEMPTIVE ****
 
 struct PCB handle_process_arrival_pp(struct PCB ready_queue[QUEUEMAX], int *queue_cnt, struct PCB current_process, struct PCB new_process, int timestamp) {
-    // Handle full queue
-    if (*queue_cnt == QUEUEMAX) {
+   
+   if (*queue_cnt == QUEUEMAX) {
         printf("Ready queue is full. Dropping new process.\n");
         return current_process; 
     }
 
-    // Handle initial arrival (no process currently running)
-    if (current_process.process_id == -1) {
+    if (current_process.process_id == -1) { // If no process is running
         new_process.execution_starttime = timestamp;
         ready_queue[(*queue_cnt)++] = new_process;
         return new_process; 
@@ -48,6 +47,7 @@ struct PCB handle_process_arrival_pp(struct PCB ready_queue[QUEUEMAX], int *queu
     // Check if new process should preempt
     if (new_process.process_priority < current_process.process_priority) {
         current_process.remaining_bursttime -= (timestamp - current_process.execution_starttime);
+        current_process.execution_endtime = 0; // Reset the EET here
         current_process.execution_starttime = -1;
 
         // Find the correct insertion point for the preempted process after the new process was inserted
@@ -71,6 +71,7 @@ struct PCB handle_process_arrival_pp(struct PCB ready_queue[QUEUEMAX], int *queu
 
     return current_process; // No preemption
 }
+
 
 
 
