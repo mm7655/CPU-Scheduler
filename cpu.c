@@ -18,7 +18,6 @@ int findShortestRemainingTime(struct PCB ready_queue[QUEUEMAX], int queue_cnt) {
 // **** PRIORITY-BASED PREEMPTIVE ****
 
 struct PCB handle_process_arrival_pp(struct PCB ready_queue[QUEUEMAX], int *queue_cnt, struct PCB current_process, struct PCB new_process, int timestamp) {
-
     if (*queue_cnt == QUEUEMAX) {
         printf("Ready queue is full. Dropping new process.\n");
         return current_process; 
@@ -30,41 +29,31 @@ struct PCB handle_process_arrival_pp(struct PCB ready_queue[QUEUEMAX], int *queu
         return new_process; 
     }
 
-    // Check if new process should preempt
-    if (new_process.process_priority < current_process.process_priority) {
-        current_process.remaining_bursttime -= (timestamp - current_process.execution_starttime);
-        current_process.execution_starttime = -1;
-
-        // Insert only the preempted process back into the queue in the right place, based on priority
-        int insertIndex = *queue_cnt;
-        for (int i = 0; i < *queue_cnt; i++) { 
-            if (current_process.process_priority <= ready_queue[i].process_priority) { 
-                insertIndex = i;
-                break;
-            }
-        }
-        for (int i = (*queue_cnt)++; i > insertIndex; i--) {
-            ready_queue[i] = ready_queue[i - 1];
-        }
-        ready_queue[insertIndex] = current_process;
-
-        new_process.execution_starttime = timestamp; // Don't add this to the queue yet since it is now the new running process
-        return new_process; 
-    }
-
-    // No preemption, insert the new process into the queue based on priority
     int insertIndex = *queue_cnt;
-    for (int i = 0; i < *queue_cnt; i++) { 
-        if (new_process.process_priority <= ready_queue[i].process_priority) {
+
+    // Check if the new process has a higher priority than any process in the ready queue.
+    for (int i = 0; i < *queue_cnt; i++) {
+        if (new_process.process_priority < ready_queue[i].process_priority) {
             insertIndex = i;
             break;
         }
     }
-    for (int i = (*queue_cnt)++; i > insertIndex; i--) {
+    
+    //Shift the elements of the queue to make space for the new process
+    for (int i = *queue_cnt; i > insertIndex; i--) {
         ready_queue[i] = ready_queue[i - 1];
     }
-    ready_queue[insertIndex] = new_process; 
-    return current_process; 
+
+    ready_queue[insertIndex] = new_process; //Insert the new process at the appropriate position
+    (*queue_cnt)++;
+    
+    //Check if the new process has a higher priority than the current process
+    if (new_process.process_priority < current_process.process_priority) {
+        current_process.remaining_bursttime -= (timestamp - current_process.execution_starttime);
+        current_process.execution_starttime = -1;
+        return new_process;
+    }
+    return current_process;
 }
 
 
