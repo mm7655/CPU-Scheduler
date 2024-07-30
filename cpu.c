@@ -167,3 +167,25 @@ struct PCB handle_process_completion_rr(struct PCB ready_queue[QUEUEMAX], int *q
     return (*queue_cnt > 0) ? ready_queue[0] : (struct PCB){-1, -1, -1, -1, -1, -1, -1};
 }
 
+void enqueue(struct PCB ready_queue[QUEUEMAX], int *queue_cnt, struct PCB process) {
+    // Ensure the queue is not full
+    if (*queue_cnt == QUEUEMAX) {
+        printf("Ready queue is full. Cannot enqueue process.\n");
+        return;
+    }
+
+    // Insert the process in the correct position based on priority
+    int insertIndex = *queue_cnt;
+    for (int i = 0; i < *queue_cnt; i++) {
+        if (process.process_priority < ready_queue[i].process_priority) {
+            insertIndex = i;
+            break;
+        }
+    }
+
+    // Shift elements to make space for the new process
+    for (int i = (*queue_cnt)++; i > insertIndex; i--) {
+        ready_queue[i] = ready_queue[i - 1];
+    }
+    ready_queue[insertIndex] = process;
+}
