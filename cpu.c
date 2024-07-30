@@ -115,8 +115,8 @@ struct PCB handle_process_arrival_srtp(struct PCB ready_queue[QUEUEMAX], int *qu
 }
 
 struct PCB handle_process_completion_rr(struct PCB ready_queue[QUEUEMAX], int *queue_cnt, int timestamp, int time_quantum) {
-    if (*queue_cnt == 0)   
- {
+    if (*queue_cnt == 0)
+    {
         struct PCB null_PCB = {-1, -1, -1, -1, -1, -1, -1};
         return null_PCB;
     }
