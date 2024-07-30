@@ -37,12 +37,12 @@ struct PCB handle_process_arrival_pp(struct PCB ready_queue[QUEUEMAX], int *queu
         // Preempt the current process
         current_process.remaining_bursttime -= (timestamp - current_process.execution_starttime);
         // Do not reset execution_starttime for preempted process.
-        //int xyz =current_process.execution_endtime;
-        //current_process.execution_endtime = 0;
+        int xyz =current_process.execution_endtime;
+        current_process.execution_endtime = 0;
 
         // Insert the preempted process into the ready queue
         ready_queue[(*queue_cnt)++] = current_process;
-        //current_process.execution_endtime = xyz;
+        current_process.execution_endtime = xyz;
 
         new_process.execution_starttime = timestamp;
         new_process.execution_endtime = timestamp + new_process.total_bursttime;
