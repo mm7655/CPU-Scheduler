@@ -95,42 +95,6 @@ struct PCB handle_process_completion_pp(struct PCB ready_queue[QUEUEMAX], int *q
 }
 
 
-// **** Test Harness (with inlined comparison) ****
-void test_handle_process_completion_pp() {
-    struct PCB ready_queue[QUEUEMAX] = {
-        {1, 1, 4, 0, 0, 4, 23}, 
-        {2, 1, 4, 0, 0, 4, 22}, 
-        {3, 1, 4, 0, 0, 4, 24}
-    };
-    int queue_cnt = 3;
-    int timestamp = 2;
-
-    struct PCB expected_ready_queue[] = {
-        {1, 1, 4, 0, 0, 4, 23}, 
-        {3, 1, 4, 0, 0, 4, 24}
-    };
-    struct PCB expected_return_pcb = {2, 1, 4, 2, 6, 4, 22};
-
-    struct PCB result = handle_process_completion_pp(ready_queue, &queue_cnt, timestamp);
-
-    if (
-        queue_cnt == 2 &&
-        memcmp(&ready_queue[0], &expected_ready_queue[0], sizeof(struct PCB)) == 0 &&
-        memcmp(&ready_queue[1], &expected_ready_queue[1], sizeof(struct PCB)) == 0 &&
-        memcmp(&result, &expected_return_pcb, sizeof(struct PCB)) == 0
-    ) {
-        printf("Test Case 1: Passed\n");
-    } else {
-        printf("Test Case 1: Failed\n");
-    }
-}
-
-int main() {
-    test_handle_process_completion_pp();
-    return 0;
-}
-
-
 // **** SRTF ****
 
 struct PCB handle_process_arrival_srtp(struct PCB ready_queue[QUEUEMAX], int *queue_cnt, struct PCB current_process, struct PCB new_process, int timestamp) {
