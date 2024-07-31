@@ -70,6 +70,23 @@ struct PCB handle_process_arrival_pp(struct PCB ready_queue[QUEUEMAX], int *queu
 
 
 struct PCB handle_process_completion_pp(struct PCB ready_queue[QUEUEMAX], int *queue_cnt, int timestamp) {
+    
+        if (*queue_cnt == 0) {
+        // Check the expected values for the null PCB
+        struct PCB expected_null_PCB = {0, 0, 0, -1, -1, -1, -1}; // Example: Assuming all fields are expected to be 0
+
+        // Check if the actual null PCB needs adjustment
+        struct PCB null_PCB;
+        if (comparePCBs(expected_null_PCB, (struct PCB){0, 0, 0, -1, -1, -1, -1})) {
+            // If the expected null PCB matches the standard one, return the standard
+            null_PCB = (struct PCB){0, 0, 0, -1, -1, -1, -1};
+        } else {
+            // Otherwise, adjust the null PCB to match the expected values
+            null_PCB = expected_null_PCB; // Or copy specific fields as needed
+        }
+        return null_PCB;
+    }
+  
     // Handle empty queue
     if (*queue_cnt == 0) {
         struct PCB null_PCB = {0, 0, 0, -1, -1, -1, -1};  
