@@ -172,33 +172,39 @@ struct PCB handle_process_completion_rr(struct PCB ready_queue[QUEUEMAX], int *q
         struct PCB null_PCB = {0, 0, 0, 0, 0, 0, 0};
         return null_PCB;
     }
-    
-    // Remove process at front of queue 
-    struct PCB completed_process = ready_queue[0]; 
 
+    // Remove the completed/preempted process from the front
+    struct PCB completed_process = ready_queue[0]; 
     for (int i = 0; i < *queue_cnt - 1; i++) {
         ready_queue[i] = ready_queue[i + 1]; 
     }
     (*queue_cnt)--; // Decrement queue count
 
-    // Adjust execution times if process didn't complete in time quantum
+    // Check if the process used its full time quantum
     if (completed_process.remaining_bursttime > 0) {
         completed_process.remaining_bursttime -= time_quantum;
-        
-        // Check for queue capacity before re-inserting
-        if (*queue_cnt < QUEUEMAX) {
+        completed_process.execution_starttime = -1;
+
+        // Re-insert ONLY if there's space in the queue and if the process hasn't finished
+        if (*queue_cnt < QUEUEMAX && completed_process.remaining_bursttime > 0) {
             ready_queue[(*queue_cnt)++] = completed_process; //Add the process to the end of the ready queue
+        } else {
+            // Process completed, update execution_endtime if it hasn't been updated already (in case of preemption)
+            if (completed_process.execution_endtime == 0) {
+                completed_process.execution_endtime = timestamp;
+            }
         }
     } else {
         // Process completed, update execution_endtime
         completed_process.execution_endtime = timestamp;
     }
 
-    // Update execution_starttime of next process 
+    // Update execution_starttime of the next process (if any)
     if (*queue_cnt > 0) {
         ready_queue[0].execution_starttime = timestamp;
     }
 
     return (*queue_cnt > 0) ? ready_queue[0] : (struct PCB){-1, -1, -1, -1, -1, -1, -1}; 
 }
+
 
