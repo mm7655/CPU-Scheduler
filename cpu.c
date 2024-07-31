@@ -168,30 +168,37 @@ struct PCB handle_process_arrival_rr(struct PCB ready_queue[QUEUEMAX], int *queu
 
 
 struct PCB handle_process_completion_rr(struct PCB ready_queue[QUEUEMAX], int *queue_cnt, int timestamp, int time_quantum) {
-    if (*queue_cnt == 0) { // Handle empty queue
-        struct PCB null_PCB = {-1, -1, -1, -1, -1, -1, -1};
+    if (*queue_cnt == 0) {
+        struct PCB null_PCB = {0, 0, 0, 0, 0, 0, 0};
         return null_PCB;
     }
+    
+    // Remove process at front of queue 
+    struct PCB completed_process = ready_queue[0]; 
 
-    struct PCB completed_process = ready_queue[0];
     for (int i = 0; i < *queue_cnt - 1; i++) {
-        ready_queue[i] = ready_queue[i + 1];
+        ready_queue[i] = ready_queue[i + 1]; 
     }
-    (*queue_cnt)--;
+    (*queue_cnt)--; // Decrement queue count
 
-    // Check if process used its full time quantum
+    // Adjust execution times if process didn't complete in time quantum
     if (completed_process.remaining_bursttime > 0) {
         completed_process.remaining_bursttime -= time_quantum;
-        completed_process.execution_starttime = -1; // Mark as not running
-        ready_queue[*queue_cnt] = completed_process; // Add back to the end of the queue
-        (*queue_cnt)++;
+        
+        // Check for queue capacity before re-inserting
+        if (*queue_cnt < QUEUEMAX) {
+            ready_queue[(*queue_cnt)++] = completed_process; //Add the process to the end of the ready queue
+        }
+    } else {
+        // Process completed, update execution_endtime
+        completed_process.execution_endtime = timestamp;
     }
 
-    // Update the execution start time of the next process (if any)
+    // Update execution_starttime of next process 
     if (*queue_cnt > 0) {
         ready_queue[0].execution_starttime = timestamp;
     }
-    
-    // Return the next process or a null PCB
-    return (*queue_cnt > 0) ? ready_queue[0] : (struct PCB){-1, -1, -1, -1, -1, -1, -1};
+
+    return (*queue_cnt > 0) ? ready_queue[0] : (struct PCB){-1, -1, -1, -1, -1, -1, -1}; 
 }
+
