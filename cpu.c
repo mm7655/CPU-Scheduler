@@ -183,11 +183,14 @@ struct PCB handle_process_completion_rr(struct PCB ready_queue[QUEUEMAX], int *q
     // Adjust execution times if process didn't complete in time quantum
     if (completed_process.remaining_bursttime > 0) {
         completed_process.remaining_bursttime -= time_quantum;
-        completed_process.execution_starttime = -1; // Mark as not running since it was preempted 
-        if (*queue_cnt < QUEUEMAX) {
-            // Re-insert at the end of the queue to maintain arrival order
-            ready_queue[(*queue_cnt)++] = completed_process; 
+        completed_process.execution_starttime = -1;
+
+        // Re-insert ONLY if there's space in the queue and if the process hasn't finished
+        if (*queue_cnt < QUEUEMAX && completed_process.remaining_bursttime > 0) {
+            // Add the preempted process to the end of the ready queue
+            ready_queue[(*queue_cnt)++] = completed_process;
         } else {
+            // Process completed, update execution_endtime if it hasn't been updated already (in case of preemption)
             if (completed_process.execution_endtime == 0) {
                 completed_process.execution_endtime = timestamp;
             }
@@ -196,14 +199,20 @@ struct PCB handle_process_completion_rr(struct PCB ready_queue[QUEUEMAX], int *q
         // Process completed, update execution_endtime
         completed_process.execution_endtime = timestamp;
     }
-   
+    
+    //Check for the case where there is only one item in the queue and it is a process that has been preempted before and did not finish
+    if (*queue_cnt == 1 && ready_queue[0].execution_starttime == -1) {
+        ready_queue[0].execution_starttime = timestamp;
+    }
+
     // Update execution_starttime of the next process (if any)
-    if (*queue_cnt > 0) {
+    if (*queue_cnt > 0 && ready_queue[0].execution_starttime != -1) {
         ready_queue[0].execution_starttime = timestamp;
     }
 
     return (*queue_cnt > 0) ? ready_queue[0] : (struct PCB){-1, -1, -1, -1, -1, -1, -1}; 
 }
+
 
 
 
