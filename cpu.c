@@ -19,7 +19,11 @@ int findShortestRemainingTime(struct PCB ready_queue[QUEUEMAX], int queue_cnt) {
 // **** PRIORITY-BASED PREEMPTIVE ****
 
 struct PCB handle_process_arrival_pp(struct PCB ready_queue[QUEUEMAX], int *queue_cnt, struct PCB current_process, struct PCB new_process, int timestamp) {
-
+    // Handle empty queue
+    if (*queue_cnt == 0) {
+        struct PCB null_PCB = {0, 0, 0, 0, 0, 0, 0}; // total_bursttime = 0
+        return null_PCB;
+    }
     // Handle full queue 
     if (*queue_cnt == QUEUEMAX) {
         printf("Ready queue is full. Dropping new process.\n");
