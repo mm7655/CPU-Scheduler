@@ -71,7 +71,7 @@ struct PCB handle_process_arrival_pp(struct PCB ready_queue[QUEUEMAX], int *queu
 
 struct PCB handle_process_completion_pp(struct PCB ready_queue[QUEUEMAX], int *queue_cnt, int timestamp) {
     if (*queue_cnt == 0) {
-        struct PCB null_PCB = {0, 0, -1, -1, -1, -1, -1}; //arrival_timestamp = 0
+        struct PCB null_PCB = {0, 0, 0, -1, -1, -1, -1}; // total_bursttime = 0
         return null_PCB; 
     }
 
@@ -93,6 +93,7 @@ struct PCB handle_process_completion_pp(struct PCB ready_queue[QUEUEMAX], int *q
     next_process.execution_endtime = timestamp + next_process.remaining_bursttime;
     return next_process;
 }
+
 
 
 
