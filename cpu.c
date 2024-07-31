@@ -180,10 +180,10 @@ struct PCB handle_process_completion_rr(struct PCB ready_queue[QUEUEMAX], int *q
     }
     (*queue_cnt)--; // Decrement queue count
 
-    // Check if the process used its full time quantum
+    // Adjust execution times if process didn't complete in time quantum
     if (completed_process.remaining_bursttime > 0) {
         completed_process.remaining_bursttime -= time_quantum;
-        completed_process.execution_starttime = -1;
+        completed_process.execution_starttime = -1; // Mark as not running since it was preempted 
 
         // Re-insert ONLY if there's space in the queue and if the process hasn't finished
         if (*queue_cnt < QUEUEMAX && completed_process.remaining_bursttime > 0) {
@@ -201,10 +201,14 @@ struct PCB handle_process_completion_rr(struct PCB ready_queue[QUEUEMAX], int *q
 
     // Update execution_starttime of the next process (if any)
     if (*queue_cnt > 0) {
-        ready_queue[0].execution_starttime = timestamp;
+        // Check if the next process has already been started (preemption)
+        if (ready_queue[0].execution_starttime == -1) {
+            ready_queue[0].execution_starttime = timestamp;
+        }
     }
 
     return (*queue_cnt > 0) ? ready_queue[0] : (struct PCB){-1, -1, -1, -1, -1, -1, -1}; 
 }
+
 
 
