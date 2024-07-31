@@ -120,21 +120,37 @@ struct PCB handle_process_arrival_srtp(struct PCB ready_queue[QUEUEMAX], int *qu
 }
 
 struct PCB handle_process_completion_srtp(struct PCB ready_queue[QUEUEMAX], int *queue_cnt, int timestamp) {
-    if (*queue_cnt == 0) { // Handle empty queue
-        struct PCB null_PCB = {-1, -1, -1, -1, -1, -1, -1};
+    // Handle empty queue
+    if (*queue_cnt == 0) {
+        struct PCB null_PCB = {0, 0, 0, 0, 0, 0, 0};
+        return null_PCB; // Return a properly initialized null PCB
+    }
+
+    // Find the process with the shortest remaining burst time
+    int shortestRemainingTimeIndex = findShortestRemainingTime(ready_queue, *queue_cnt);
+    
+    // If no process with remaining burst time is found, return a null PCB
+    if (shortestRemainingTimeIndex == -1) {
+        struct PCB null_PCB = {0, 0, 0, 0, 0, 0, 0};
         return null_PCB;
     }
 
-    int next_process_index = findShortestRemainingTime(ready_queue, *queue_cnt); 
-    struct PCB next_process = ready_queue[next_process_index];
+    struct PCB next_process = ready_queue[shortestRemainingTimeIndex];
 
-    // Shift elements to remove the completed process
-    for (int i = next_process_index; i < (*queue_cnt) - 1; i++) {
+    // Shift elements to remove the completed process from the ready queue
+    for (int i = shortestRemainingTimeIndex; i < (*queue_cnt) - 1; i++) {
         ready_queue[i] = ready_queue[i + 1];
     }
+
+    // Decrease the queue count
     (*queue_cnt)--;
 
+    // Update the execution start and end times for the selected process
     next_process.execution_starttime = timestamp; 
+    next_process.execution_endtime = timestamp + next_process.remaining_bursttime; 
+
+    // Return   
+ the process with the shortest remaining burst time to be executed next
     return next_process;
 }
 
