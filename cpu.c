@@ -149,8 +149,7 @@ struct PCB handle_process_completion_srtp(struct PCB ready_queue[QUEUEMAX], int 
     next_process.execution_starttime = timestamp; 
     next_process.execution_endtime = timestamp + next_process.remaining_bursttime; 
 
-    // Return   
- the process with the shortest remaining burst time to be executed next
+    // Return the process with the shortest remaining burst time to be executed next
     return next_process;
 }
 
