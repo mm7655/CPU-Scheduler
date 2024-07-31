@@ -70,12 +70,11 @@ struct PCB handle_process_arrival_pp(struct PCB ready_queue[QUEUEMAX], int *queu
 
 
 struct PCB handle_process_completion_pp(struct PCB ready_queue[QUEUEMAX], int *queue_cnt, int timestamp) {
-    if (*queue_cnt == 0) {  
-        // Correctly initialize a null PCB with process_id = 0
-        struct PCB null_PCB = {0, -1, -1, -1, -1, -1, -1}; 
+    if (*queue_cnt == 0) {
+        struct PCB null_PCB = {0, 0, -1, -1, -1, -1, -1}; //arrival_timestamp = 0
         return null_PCB; 
     }
-    
+
     int highestPriorityIndex = 0;
     for (int i = 1; i < *queue_cnt; i++) {
         if (ready_queue[i].process_priority < ready_queue[highestPriorityIndex].process_priority) {
@@ -90,10 +89,11 @@ struct PCB handle_process_completion_pp(struct PCB ready_queue[QUEUEMAX], int *q
     }
     (*queue_cnt)--;
 
-    next_process.execution_starttime = timestamp; 
+    next_process.execution_starttime = timestamp;
     next_process.execution_endtime = timestamp + next_process.remaining_bursttime;
     return next_process;
 }
+
 
 
 
