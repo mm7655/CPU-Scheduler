@@ -1,6 +1,7 @@
 #include "oslabs.h"
 #include <stdio.h>
 #include <limits.h> 
+#include <string.h>
 
 int findShortestRemainingTime(struct PCB ready_queue[QUEUEMAX], int queue_cnt) {
     int shortest_index = -1;
@@ -67,70 +68,67 @@ struct PCB handle_process_arrival_pp(struct PCB ready_queue[QUEUEMAX], int *queu
 }
 
 
-
-
-struct PCB handle_process_arrival_pp(struct PCB ready_queue[QUEUEMAX], int *queue_cnt, struct PCB current_process, struct PCB new_process, int timestamp) {
-
-    if (*queue_cnt == QUEUEMAX) {
-        printf("Ready queue is full. Dropping new process.\n");
-        return current_process; 
+struct PCB handle_process_completion_pp(struct PCB ready_queue[QUEUEMAX], int *queue_cnt, int timestamp) {
+    // Handle empty queue
+    if (*queue_cnt == 0) {
+        struct PCB null_PCB = {0, 0, 0, 0, 0, 0, 0}; // total_bursttime = 0
+        return null_PCB;
     }
 
-    if (current_process.process_id == -1) { // No process running
-        new_process.execution_starttime = timestamp;
-        new_process.execution_endtime = timestamp + new_process.total_bursttime;
-        new_process.remaining_bursttime = new_process.total_bursttime;
-        ready_queue[(*queue_cnt)++] = new_process;
-        return new_process;
-    }
-
-    // Check if new process should preempt
-    if (new_process.process_priority < current_process.process_priority) {
-        // Preempt the current process
-        new_process.execution_starttime = timestamp;
-        new_process.execution_endtime = timestamp + new_process.total_bursttime;
-        new_process.remaining_bursttime = new_process.total_bursttime;
-       
-        current_process.remaining_bursttime -= (timestamp - current_process.execution_starttime);
-        //current_process.execution_starttime = 0; 
-        current_process.execution_endtime = 0; 
-        
-
-        // Insert preempted process directly into the queue based on priority
-        int currentInsertIndex = *queue_cnt;
-        for (int i = 0; i < *queue_cnt; i++) { 
-            if (current_process.process_priority < ready_queue[i].process_priority) {
-                currentInsertIndex = i;
-                break;
-            }
-        }
-        for (int i = (*queue_cnt)++; i > currentInsertIndex; i--) { 
-            ready_queue[i] = ready_queue[i - 1];
-        }
-        ready_queue[currentInsertIndex] = current_process;
-
-        return new_process;
-    }
-
-    // No preemption, insert the new process into the queue based on priority
-    int insertIndex = *queue_cnt;
-    for (int i = 0; i < *queue_cnt; i++) { 
-        if (new_process.process_priority < ready_queue[i].process_priority) {
-            insertIndex = i;
-            break;
+    int highestPriorityIndex = 0;
+    for (int i = 1; i < *queue_cnt; i++) {
+        if (ready_queue[i].process_priority < ready_queue[highestPriorityIndex].process_priority) {
+            highestPriorityIndex = i;
         }
     }
-    for (int i = (*queue_cnt)++; i > insertIndex; i--) {
-        ready_queue[i] = ready_queue[i - 1];
+
+    struct PCB next_process = ready_queue[highestPriorityIndex];
+
+    for (int i = highestPriorityIndex; i < (*queue_cnt) - 1; i++) {
+        ready_queue[i] = ready_queue[i + 1];
     }
-    ready_queue[insertIndex] = new_process; // Insert preempted process
-  
-    return current_process; 
+    (*queue_cnt)--;
+
+    next_process.execution_starttime = timestamp;
+    next_process.execution_endtime = timestamp + next_process.remaining_bursttime;
+    return next_process;
 }
 
 
+// **** Test Harness (with inlined comparison) ****
+void test_handle_process_completion_pp() {
+    struct PCB ready_queue[QUEUEMAX] = {
+        {1, 1, 4, 0, 0, 4, 23}, 
+        {2, 1, 4, 0, 0, 4, 22}, 
+        {3, 1, 4, 0, 0, 4, 24}
+    };
+    int queue_cnt = 3;
+    int timestamp = 2;
 
+    struct PCB expected_ready_queue[] = {
+        {1, 1, 4, 0, 0, 4, 23}, 
+        {3, 1, 4, 0, 0, 4, 24}
+    };
+    struct PCB expected_return_pcb = {2, 1, 4, 2, 6, 4, 22};
 
+    struct PCB result = handle_process_completion_pp(ready_queue, &queue_cnt, timestamp);
+
+    if (
+        queue_cnt == 2 &&
+        memcmp(&ready_queue[0], &expected_ready_queue[0], sizeof(struct PCB)) == 0 &&
+        memcmp(&ready_queue[1], &expected_ready_queue[1], sizeof(struct PCB)) == 0 &&
+        memcmp(&result, &expected_return_pcb, sizeof(struct PCB)) == 0
+    ) {
+        printf("Test Case 1: Passed\n");
+    } else {
+        printf("Test Case 1: Failed\n");
+    }
+}
+
+int main() {
+    test_handle_process_completion_pp();
+    return 0;
+}
 
 
 // **** SRTF ****
