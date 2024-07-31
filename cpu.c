@@ -141,14 +141,31 @@ struct PCB handle_process_completion_srtp(struct PCB ready_queue[QUEUEMAX], int 
 
 // **** ROUND ROBIN ****
 
-struct PCB handle_process_arrival_rr(struct PCB ready_queue[QUEUEMAX], int *queue_cnt, struct PCB current_process, struct PCB new_process, int timestamp, int time_quantum)
-{
-    if (*queue_cnt < QUEUEMAX) {
-        ready_queue[*queue_cnt] = new_process;
-        (*queue_cnt)++;
-    } 
-    return current_process; // No preemption in RR on arrival
+struct PCB handle_process_arrival_rr(struct PCB ready_queue[QUEUEMAX], int *queue_cnt, struct PCB current_process, struct PCB new_process, int timestamp, int time_quantum) {
+   
+   // Handle full queue 
+    if (*queue_cnt == QUEUEMAX) {
+        printf("Ready queue is full. Dropping new process.\n");
+        return current_process; 
+    }
+    
+    // Insert the new process into the queue based on priority
+    int insertIndex = *queue_cnt;
+    for (int i = 0; i < *queue_cnt; i++) { 
+        if (new_process.process_priority < ready_queue[i].process_priority) {
+            insertIndex = i;
+            break;
+        }
+    }
+    for (int i = (*queue_cnt)++; i > insertIndex; i--) {
+        ready_queue[i] = ready_queue[i - 1];
+    }
+    ready_queue[insertIndex] = new_process; 
+   
+    return current_process; 
 }
+
+
 
 struct PCB handle_process_completion_rr(struct PCB ready_queue[QUEUEMAX], int *queue_cnt, int timestamp, int time_quantum) {
     if (*queue_cnt == 0) { // Handle empty queue
