@@ -174,22 +174,21 @@ struct PCB handle_process_completion_rr(struct PCB ready_queue[QUEUEMAX], int *q
     }
 
     // Remove the completed/preempted process from the front
-    struct PCB completed_process = ready_queue[0]; 
+    struct PCB completed_process = ready_queue[0];
     for (int i = 0; i < *queue_cnt - 1; i++) {
-        ready_queue[i] = ready_queue[i + 1]; 
+        ready_queue[i] = ready_queue[i + 1];
     }
     (*queue_cnt)--; // Decrement queue count
 
     // Adjust execution times if process didn't complete in time quantum
     if (completed_process.remaining_bursttime > 0) {
         completed_process.remaining_bursttime -= time_quantum;
-        completed_process.execution_starttime = -1;
+        completed_process.execution_starttime = -1; // Mark as not running since it was preempted 
 
         // Re-insert ONLY if there's space in the queue and if the process hasn't finished
         if (*queue_cnt < QUEUEMAX && completed_process.remaining_bursttime > 0) {
             // Add the preempted process to the end of the ready queue
-            ready_queue[*queue_cnt] = completed_process;
-            (*queue_cnt)++; //Increment the queue counter
+            ready_queue[(*queue_cnt)++] = completed_process;
         } else {
             // Process completed, update execution_endtime if it hasn't been updated already (in case of preemption)
             if (completed_process.execution_endtime == 0) {
@@ -201,13 +200,24 @@ struct PCB handle_process_completion_rr(struct PCB ready_queue[QUEUEMAX], int *q
         completed_process.execution_endtime = timestamp;
     }
 
-    // Update execution_starttime of the next process (if any)
+    // Update execution_starttime of the next process (if any) AND shift queue if needed
     if (*queue_cnt > 0) {
+        // If the next process is the one that was previously preempted, 
+        // shift it to the back of the queue to maintain arrival time order
+        if (ready_queue[0].process_id == completed_process.process_id) {
+            struct PCB temp = ready_queue[0];
+            for (int i = 0; i < *queue_cnt - 1; i++) {
+                ready_queue[i] = ready_queue[i + 1];
+            }
+            ready_queue[*queue_cnt - 1] = temp;
+        }
+
         ready_queue[0].execution_starttime = timestamp;
     }
 
     return (*queue_cnt > 0) ? ready_queue[0] : (struct PCB){-1, -1, -1, -1, -1, -1, -1}; 
 }
+
 
 
 
