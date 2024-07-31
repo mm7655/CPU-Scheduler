@@ -69,58 +69,65 @@ struct PCB handle_process_arrival_pp(struct PCB ready_queue[QUEUEMAX], int *queu
 
 
 
-struct PCB handle_process_completion_pp(struct PCB ready_queue[QUEUEMAX], int *queue_cnt, int timestamp) {
-    
-        if (*queue_cnt == 0) {
-        // Check the expected values for the null PCB
-        struct PCB expected_null_PCB = {0, 0, 0, -1, -1, -1, -1}; // Example: Assuming all fields are expected to be 0
+struct PCB handle_process_arrival_pp(struct PCB ready_queue[QUEUEMAX], int *queue_cnt, struct PCB current_process, struct PCB new_process, int timestamp) {
 
-        // Check if the actual null PCB needs adjustment
-        struct PCB null_PCB;
-        if (comparePCBs(expected_null_PCB, (struct PCB){0, 0, 0, -1, -1, -1, -1})) {
-            // If the expected null PCB matches the standard one, return the standard
-            null_PCB = (struct PCB){0, 0, 0, -1, -1, -1, -1};
-        } else {
-            // Otherwise, adjust the null PCB to match the expected values
-            null_PCB = expected_null_PCB; // Or copy specific fields as needed
-        }
-        return null_PCB;
+    if (*queue_cnt == QUEUEMAX) {
+        printf("Ready queue is full. Dropping new process.\n");
+        return current_process; 
     }
+
+    if (current_process.process_id == -1) { // No process running
+        new_process.execution_starttime = timestamp;
+        new_process.execution_endtime = timestamp + new_process.total_bursttime;
+        new_process.remaining_bursttime = new_process.total_bursttime;
+        ready_queue[(*queue_cnt)++] = new_process;
+        return new_process;
+    }
+
+    // Check if new process should preempt
+    if (new_process.process_priority < current_process.process_priority) {
+        // Preempt the current process
+        new_process.execution_starttime = timestamp;
+        new_process.execution_endtime = timestamp + new_process.total_bursttime;
+        new_process.remaining_bursttime = new_process.total_bursttime;
+       
+        current_process.remaining_bursttime -= (timestamp - current_process.execution_starttime);
+        //current_process.execution_starttime = 0; 
+        current_process.execution_endtime = 0; 
+        
+
+        // Insert preempted process directly into the queue based on priority
+        int currentInsertIndex = *queue_cnt;
+        for (int i = 0; i < *queue_cnt; i++) { 
+            if (current_process.process_priority < ready_queue[i].process_priority) {
+                currentInsertIndex = i;
+                break;
+            }
+        }
+        for (int i = (*queue_cnt)++; i > currentInsertIndex; i--) { 
+            ready_queue[i] = ready_queue[i - 1];
+        }
+        ready_queue[currentInsertIndex] = current_process;
+
+        return new_process;
+    }
+
+    // No preemption, insert the new process into the queue based on priority
+    int insertIndex = *queue_cnt;
+    for (int i = 0; i < *queue_cnt; i++) { 
+        if (new_process.process_priority < ready_queue[i].process_priority) {
+            insertIndex = i;
+            break;
+        }
+    }
+    for (int i = (*queue_cnt)++; i > insertIndex; i--) {
+        ready_queue[i] = ready_queue[i - 1];
+    }
+    ready_queue[insertIndex] = new_process; // Insert preempted process
   
-    // Handle empty queue
-    if (*queue_cnt == 0) {
-        struct PCB null_PCB = {0, 0, 0, -1, -1, -1, -1};  
-        return null_PCB; 
-    }
-
-    // Find the highest priority process
-    int highestPriorityIndex = 0;
-    for (int i = 1; i < *queue_cnt; i++) {
-        if (ready_queue[i].process_priority < ready_queue[highestPriorityIndex].process_priority) {
-            highestPriorityIndex = i;
-        }
-    }
-
-    // Get the process with the highest priority
-    struct PCB next_process = ready_queue[highestPriorityIndex];
-
-    // Shift elements to remove the completed process from the ready queue
-    for (int i = highestPriorityIndex; i < (*queue_cnt) - 1; i++) {
-        ready_queue[i] = ready_queue[i + 1];
-    }
-
-    // Decrease the queue count
-    (*queue_cnt)--;
-
-    // Update the execution start time for the selected process
-    next_process.execution_starttime = timestamp;
-
-    // Set the execution end time for the selected process
-    next_process.execution_endtime = timestamp + next_process.remaining_bursttime;
-
-    // Return the process with the highest priority to be executed next
-    return next_process;
+    return current_process; 
 }
+
 
 
 
